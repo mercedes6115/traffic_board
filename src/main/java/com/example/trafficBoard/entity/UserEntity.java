@@ -2,12 +2,12 @@ package com.example.trafficBoard.entity;
 
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Getter
-@Setter
+@Data
 @Table(name = "user")
 public class UserEntity extends GeneralEntity{
 

@@ -86,7 +86,6 @@ public class PostServiceImpl implements PostService {
     @Override
     public ResponseEntity<Object> createPost(PostCreateRequest request) {
 
-
         PostsEntity entity = new PostsEntity();
         entity.setPost_id(request.getUserId());
         entity.setTitle(request.getTitle());
@@ -95,6 +94,11 @@ public class PostServiceImpl implements PostService {
         postRepository.save(entity);
 
         return null;
+    }
+
+    public Object viewPostsList(){
+
+        return postRepository.findAll();
     }
 
     /**
