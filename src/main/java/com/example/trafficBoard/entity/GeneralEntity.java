@@ -21,12 +21,12 @@ import java.time.LocalDateTime;
 public class GeneralEntity {
 
     /** 등록일시 */
-    @Column(name = "regDt")
+    @Column(name = "regDt",columnDefinition = "DATETIME")
     @CreatedDate
     private LocalDateTime registrationDate;
 
     /** 수정일시 */
-    @Column(name = "modDt")
+    @Column(name = "modDt",columnDefinition = "DATETIME")
     @LastModifiedDate
     private LocalDateTime lastUpdatedDate;
 }

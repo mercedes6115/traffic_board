@@ -1,6 +1,7 @@
 package com.example.trafficBoard.controller;
 
 
+import com.example.trafficBoard.dto.request.PostCreateRequest;
 import com.example.trafficBoard.entity.PostsEntity;
 import com.example.trafficBoard.repository.PostRepository;
 import com.example.trafficBoard.service.impl.PostServiceImpl;
@@ -8,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -35,7 +35,7 @@ public class PostController {
         String response = String.format(
                 "Post Title: %s\nAuthor: %s\nCurrent View Count: %d",
                 post.getTitle(),
-                post.getUser_id(),
+                post.getUser().getUser_id(),
                 averageRate,
                 viewCount
         );
@@ -43,11 +43,10 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    public ResponseEntity<Object> viewPostsList(@PathVariable Long postId, @RequestParam Long userId) {
-        Object response = postService.viewPostsList();
 
-        PostsEntity post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+    @GetMapping("/post/view/list")
+    public ResponseEntity<Object> viewPostsList() {
+        Object response = postService.viewPostsList();
 
         return ResponseEntity.ok(response);
     }
@@ -56,13 +55,31 @@ public class PostController {
     public ResponseEntity<String> ratePost(@PathVariable Long postId, @RequestParam Long userId, @RequestParam int score) {
         postService.ratePost(postId, userId, score);
 
-       String response = String.format("Post Rate Success");
+        String response = String.format("Post Rate Success");
 
         return ResponseEntity.ok(response);
     }
 
-//    @PostMapping("/{postId}/like")
-//    public ResponseEntity<String> likePost(@PathVariable Long postId, @RequestParam String username) {
-//        return postService.likePost(postId, username);
-//    }
+    @PostMapping("/create/post")
+    public ResponseEntity<String> createPost(@RequestBody PostCreateRequest request) {
+        postService.createPost(request);
+
+        String response = String.format("Post Rate Success");
+        return ResponseEntity.ok(response);
+    }
+
+
+    // 게시글 좋아요 추가/삭제
+    @PostMapping("/{postId}/toggle/{userId}")
+    public ResponseEntity<String> toggleLike(@PathVariable Long postId, @PathVariable Long userId) {
+        boolean liked = postService.toggleLike(postId, userId);
+        return ResponseEntity.ok(liked ? "Liked" : "Unliked");
+    }
+
+    // 게시글의 좋아요 수 조회
+    @GetMapping("/{postId}/count")
+    public ResponseEntity<Long> getLikesCount(@PathVariable Long postId) {
+        Long likesCount = postService.getLikeCount(postId);
+        return ResponseEntity.ok(likesCount);
+    }
 }

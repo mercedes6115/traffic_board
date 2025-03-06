@@ -16,6 +16,7 @@ public class UserEntity extends GeneralEntity{
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
+    @Id
     private Long user_id;
 
     @Column(name = "username")

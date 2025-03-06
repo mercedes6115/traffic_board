@@ -1,8 +1,12 @@
 package com.example.trafficBoard.service.impl;
 
 import com.example.trafficBoard.dto.request.PostCreateRequest;
+import com.example.trafficBoard.entity.LikesEntity;
 import com.example.trafficBoard.entity.PostsEntity;
+import com.example.trafficBoard.entity.UserEntity;
+import com.example.trafficBoard.repository.LikesEntityRepository;
 import com.example.trafficBoard.repository.PostRepository;
+import com.example.trafficBoard.repository.UserRepository;
 import com.example.trafficBoard.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -10,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Optional;
 
 
 @Service
@@ -17,6 +22,8 @@ import java.util.Map;
 public class PostServiceImpl implements PostService {
 
     private final StringRedisTemplate redisTemplate;
+    private final LikesEntityRepository likesRepository;
+    private final UserRepository userRepository;
     private static final String VIEW_COUNT_KEY_PREFIX = "post:viewCount:";
     private static final String LIKE_KEY_PREFIX = "post:likes:";
     private static final String RATING_KEY_PREFIX = "post:ratings:";
@@ -36,23 +43,51 @@ public class PostServiceImpl implements PostService {
         return count != null ? Long.valueOf(count) : 0L;
     }
 
+
+
     public boolean toggleLike(Long postId, Long userId) {
-        String redisKey = LIKE_KEY_PREFIX + postId;
-        Boolean isLiked = redisTemplate.opsForSet().isMember(redisKey, userId.toString());
+        String key = LIKE_KEY_PREFIX + postId;  // Redis 키 생성
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        PostsEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        // Redis에서 좋아요 여부 확인
+        Boolean isLiked = redisTemplate.opsForSet().isMember(key, String.valueOf(userId));
 
         if (Boolean.TRUE.equals(isLiked)) {
-            redisTemplate.opsForSet().remove(redisKey, userId.toString());
-            return false;  // 좋아요 취소
+            // Redis에서 삭제 (좋아요 취소)
+            redisTemplate.opsForSet().remove(key, String.valueOf(userId));
+            likesRepository.deleteByUserAndPost(user, post);
+            return false;
         } else {
-            redisTemplate.opsForSet().add(redisKey, userId.toString());
-            return true;  // 좋아요 추가
+            // Redis에 추가 (좋아요 등록)
+            redisTemplate.opsForSet().add(key, String.valueOf(userId));
+            LikesEntity newLike = new LikesEntity();
+            newLike.setUser(user);
+            newLike.setPost(post);
+            likesRepository.save(newLike);
+            return true;
         }
     }
 
     // 좋아요 개수 조회
     public Long getLikeCount(Long postId) {
-        String redisKey = LIKE_KEY_PREFIX + postId;
-        return redisTemplate.opsForSet().size(redisKey);
+        String key = LIKE_KEY_PREFIX + postId;
+
+        // Redis에서 좋아요 수 조회
+        Long count = redisTemplate.opsForSet().size(key);
+
+        // Redis에 없으면 DB에서 가져와서 저장
+        if (count == null) {
+            count = (long) likesRepository.countByPost(postRepository.findById(postId)
+                    .orElseThrow(() -> new RuntimeException("Post not found")));
+            redisTemplate.opsForSet().add(key, String.valueOf(count));  // Redis에 저장
+        }
+
+        return (long) count.intValue();
+
     }
 
     // 특정 사용자가 좋아요 눌렀는지 확인
@@ -105,28 +140,30 @@ public class PostServiceImpl implements PostService {
      * 게시글 조회 시, 작성자가 아니고 중복 조회가 아닐 때만 조회수 증가
      */
     public Long viewPost(Long postId, Long userId) {
-        // 게시글 가져오기
         PostsEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
-        // 작성자 본인인지 확인
-        if (!post.getUser_id().equals(userId)) {
+        if (!post.getUser().getUser_id().equals(userId)) {
             String viewedUsersKey = VIEWED_USERS_KEY_PREFIX + postId;
             String viewCountKey = VIEW_COUNT_KEY_PREFIX + postId;
 
-            // 이 사용자가 이미 조회했는지 확인 (중복 방지)
             Boolean hasViewed = redisTemplate.opsForSet().isMember(viewedUsersKey, userId.toString());
 
             if (Boolean.FALSE.equals(hasViewed)) {
-                // 처음 조회한 경우에만 조회수 증가
-                redisTemplate.opsForValue().increment(viewCountKey);
-                // 사용자 ID를 조회자 목록에 추가
+                Long currentViewCount = redisTemplate.opsForValue().increment(viewCountKey);
                 redisTemplate.opsForSet().add(viewedUsersKey, userId.toString());
+
+                // 조회수가 100회 초과하면 DB 반영
+                if (currentViewCount != null && currentViewCount % 100 == 0) {
+                    post.setViews(currentViewCount.intValue());
+                    postRepository.save(post);
+                }
             }
         }
 
-        // 최종 조회수 반환
-        String currentViewCount = redisTemplate.opsForValue().get(VIEW_COUNT_KEY_PREFIX + postId);
-        return currentViewCount != null ? Long.parseLong(currentViewCount) : post.getViews();
+        String finalViewCount = redisTemplate.opsForValue().get(VIEW_COUNT_KEY_PREFIX + postId);
+        return finalViewCount != null ? Long.parseLong(finalViewCount) : post.getViews();
     }
+
+
 }

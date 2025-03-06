@@ -19,14 +19,12 @@ public class PostsEntity extends GeneralEntity{
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "post_id")
+    @Id
     private Long post_id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
-    private PostsEntity postsEntity;
-
-    @Column(name = "user_id")
-    private Long user_id;
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 
     @Column(name = "title")
     private String title;
@@ -40,6 +38,4 @@ public class PostsEntity extends GeneralEntity{
     @Column(name = "average_rating")
     private BigDecimal average_rating;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PostRatingEntity> ratings;
 }

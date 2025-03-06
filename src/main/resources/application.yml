@@ -1,6 +1,17 @@
+server:
+  port: 8081
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui  # 기본값 사용 (경로 변경 X)
+  api-docs:
+    path: /v3/api-docs
+
 spring:
   application:
     name: trafficBoard
+    profiles:
+      active: default
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/traffic_board?serverTimezone=UTC&autoReconnect=true&characterEncoding=UTF-8
     username: root
@@ -8,12 +19,21 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
       ddl-auto: update
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
     show-sql: true
+
   redis:
     host: localhost
     port: 6379
+
+# APM 설정 추가
+elastic.apm:
+  server_urls: "http://localhost:8200"
+  service_name: "trafficBoard"
+  application_packages: "com.example"

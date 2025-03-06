@@ -20,12 +20,12 @@ public class LikesEntity extends GeneralEntity{
 
     // 사용자(User)와의 외래 키 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "FK_likes_user"))
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     // 게시글(Post)와의 외래 키 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false, foreignKey = @ForeignKey(name = "FK_likes_posts"))
+    @JoinColumn(name = "post_id")
     private PostsEntity post;
 
 }

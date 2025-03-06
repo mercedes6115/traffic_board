@@ -10,8 +10,8 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-@Table(name = "view")
-public class ViewsEntity extends GeneralEntity{
+@Table(name = "views")
+public class ViewsEntity extends GeneralEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "view_id")
@@ -19,12 +19,12 @@ public class ViewsEntity extends GeneralEntity{
 
     // 사용자(User)와의 외래 키 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "FK_likes_user"))
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     // 게시글(Post)와의 외래 키 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false, foreignKey = @ForeignKey(name = "FK_likes_posts"))
+    @JoinColumn(name = "post_id")
     private PostsEntity post;
 
 }

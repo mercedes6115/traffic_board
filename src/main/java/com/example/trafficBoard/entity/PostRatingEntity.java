@@ -20,7 +20,7 @@ public class PostRatingEntity extends GeneralEntity{
     private Long postrating_id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false, foreignKey = @ForeignKey(name = "fk_post_rating_post_id"))
+    @JoinColumn(name = "post_id")
     private PostsEntity post;
 
 
